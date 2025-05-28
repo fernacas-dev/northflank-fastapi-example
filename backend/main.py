@@ -26,17 +26,41 @@ app.add_middleware(
     allow_headers=os.getenv('CORS_ALLOW_HEADERS', '*').split(','),
 )
 
-# Redis configuration using environment variables
-redis_password = os.getenv('REDIS_PASSWORD')
-redis_client = redis.Redis(
-    host=os.getenv('REDIS_HOST', 'localhost'),
-    port=int(os.getenv('REDIS_PORT', 6379)),
-    db=int(os.getenv('REDIS_DB', 0)),
-    password=redis_password if redis_password else None,
-    decode_responses=True,
-    socket_connect_timeout=5,
-    socket_keepalive=True
-)
+# Redis connection configuration
+redis_config = {
+    'host': os.getenv('REDIS_HOST', 'localhost'),
+    'port': int(os.getenv('REDIS_PORT', 6379)),
+    'db': int(os.getenv('REDIS_DB', 0)),
+    'password': os.getenv('REDIS_PASSWORD'),
+    'decode_responses': True,
+    'socket_timeout': 5,
+    'socket_connect_timeout': 5,
+    'retry_on_timeout': True,
+    'max_connections': 20,
+    'health_check_interval': 30,
+    'ssl': True,  # Enable SSL/TLS
+    'ssl_cert_reqs': None,  # Don't require client certificate
+    'ssl_ca_certs': None,  # Use system's default CA certificates
+}
+
+# Remove None values from config
+redis_config = {k: v for k, v in redis_config.items() if v is not None}
+
+# Create Redis connection pool
+redis_pool = redis.ConnectionPool(**redis_config)
+redis_client = redis.Redis(connection_pool=redis_pool)
+
+def get_redis_connection():
+    """Get a Redis connection from the pool with error handling"""
+    try:
+        # Test the connection
+        redis_client.ping()
+        return redis_client
+    except redis.RedisError as e:
+        print(f"Redis connection error: {e}")
+        # Attempt to reconnect
+        redis_client.connection_pool.disconnect()
+        return redis.Redis(connection_pool=redis_pool)
 
 class Task(BaseModel):
     id: str = None
@@ -52,40 +76,48 @@ async def create_task(task: Task):
     task_id = generate_id()
     task_data = task.dict()
     task_data["id"] = task_id
-    redis_client.set(f"task:{task_id}", json.dumps(task_data))
+    redis_conn = get_redis_connection()
+    redis_conn.set(f"task:{task_id}", json.dumps(task_data))
     return task_data
 
 @app.get("/tasks/{task_id}")
 async def get_task(task_id: str):
-    task_data = redis_client.get(f"task:{task_id}")
+    redis_conn = get_redis_connection()
+    task_data = redis_conn.get(f"task:{task_id}")
     if not task_data:
         raise HTTPException(status_code=404, detail="Task not found")
     return json.loads(task_data)
 
 @app.get("/tasks/")
 async def get_tasks():
-    keys = redis_client.keys("task:*")
-    tasks = []
-    for key in keys:
-        task_data = redis_client.get(key)
-        if task_data:
-            tasks.append(json.loads(task_data))
-    return tasks
+    redis_conn = get_redis_connection()
+    try:
+        keys = redis_conn.keys("task:*")
+        tasks = []
+        for key in keys:
+            task_data = redis_conn.get(key)
+            if task_data:
+                tasks.append(json.loads(task_data))
+        return tasks
+    except redis.RedisError as e:
+        raise HTTPException(status_code=500, detail=f"Redis error: {str(e)}")
 
 @app.put("/tasks/{task_id}")
 async def update_task(task_id: str, task: Task):
-    if not redis_client.exists(f"task:{task_id}"):
+    redis_conn = get_redis_connection()
+    if not redis_conn.exists(f"task:{task_id}"):
         raise HTTPException(status_code=404, detail="Task not found")
     task_data = task.dict()
     task_data["id"] = task_id
-    redis_client.set(f"task:{task_id}", json.dumps(task_data))
+    redis_conn.set(f"task:{task_id}", json.dumps(task_data))
     return task_data
 
 @app.delete("/tasks/{task_id}")
 async def delete_task(task_id: str):
-    if not redis_client.exists(f"task:{task_id}"):
+    redis_conn = get_redis_connection()
+    if not redis_conn.exists(f"task:{task_id}"):
         raise HTTPException(status_code=404, detail="Task not found")
-    redis_client.delete(f"task:{task_id}")
+    redis_conn.delete(f"task:{task_id}")
     return {"message": "Task deleted successfully"}
 
 @app.get("/health", status_code=200)
@@ -96,7 +128,8 @@ async def health_check():
     """
     try:
         # Test Redis connection
-        redis_client.ping()
+        redis_conn = get_redis_connection()
+        redis_conn.ping()
         return {
             "status": "healthy",
             "api": {
@@ -104,8 +137,8 @@ async def health_check():
             },
             "redis": {
                 "status": "connected",
-                "host": os.getenv('REDIS_HOST', 'localhost'),
-                "port": int(os.getenv('REDIS_PORT', 6379))
+                "host": redis_config.get('host'),
+                "port": redis_config.get('port')
             },
             "timestamp": str(datetime.utcnow())
         }
@@ -114,7 +147,7 @@ async def health_check():
             status_code=500,
             detail={
                 "status": "unhealthy",
-                "error": str(e),
+                "error": f"Redis connection failed: {str(e)}",
                 "timestamp": str(datetime.utcnow())
             }
         )
