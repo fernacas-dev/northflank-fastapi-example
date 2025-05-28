@@ -1,113 +1,113 @@
-# Lista de Tareas con FastAPI y React
+# Task List with FastAPI and React
 
-Aplicación de lista de tareas (To-Do List) construida con FastAPI en el backend y React en el frontend, utilizando Redis como almacenamiento.
+A Task List (To-Do List) application built with FastAPI in the backend and React in the frontend, using Redis for storage.
 
-## Características
+## Features
 
 - **Backend (FastAPI)**:
-  - API RESTful para gestionar tareas
-  - Almacenamiento en Redis
-  - Documentación automática con Swagger UI
+  - RESTful API for task management
+  - Redis storage
+  - Automatic documentation with Swagger UI
 
 - **Frontend (React)**:
-  - Interfaz de usuario intuitiva y responsiva
-  - Estado manejado con React Hooks
-  - Diseño moderno y accesible
+  - Intuitive and responsive user interface
+  - State management with React Hooks
+  - Modern and accessible design
 
-## Requisitos previos
+## Prerequisites
 
 - Python 3.8+
 - Node.js 16+
 - Redis
-- npm o yarn
+- npm or yarn
 
-## Configuración del proyecto
+## Project Setup
 
 ### Backend
 
-1. Crear un entorno virtual (recomendado):
+1. Create a virtual environment (recommended):
    ```bash
    python -m venv venv
-   source venv/bin/activate  # En Windows: .\venv\Scripts\activate
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
    ```
 
-2. Instalar dependencias:
+2. Install dependencies:
    ```bash
    cd backend
    pip install -r requirements.txt
    ```
 
-3. Configurar variables de entorno (opcional, crea un archivo `.env` en la carpeta backend):
+3. Configure environment variables (optional, create a `.env` file in the backend folder):
    ```
    REDIS_HOST=localhost
    REDIS_PORT=6379
    REDIS_DB=0
    ```
 
-4. Ejecutar el servidor de desarrollo:
+4. Run the development server:
    ```bash
    uvicorn main:app --reload
    ```
 
-El servidor estará disponible en `http://localhost:8000`
+The server will be available at `http://localhost:8000`
 
 ### Frontend
 
-1. Instalar dependencias:
+1. Install dependencies:
    ```bash
    cd frontend
    npm install
    ```
 
-2. Configurar la URL de la API (opcional, modificar en `src/App.js`):
+2. Configure the API URL (optional, modify in `src/App.js`):
    ```javascript
    const API_URL = 'http://localhost:8000';
    ```
 
-3. Ejecutar la aplicación en modo desarrollo:
+3. Run the development server:
    ```bash
    npm start
    ```
 
-La aplicación estará disponible en `http://localhost:3000`
+The application will be available at `http://localhost:3000`
 
-## Despliegue
+## Deployment
 
 ### Backend (Northflank)
 
-1. Crear un nuevo proyecto en Northflank
-2. Agregar un servicio de Redis
-3. Configurar las variables de entorno para conectar con Redis
-4. Desplegar el código del backend
+1. Create a new project in Northflank
+2. Add a Redis service
+3. Configure environment variables to connect to Redis
+4. Deploy the backend code
 
 ### Frontend (Vercel)
 
-1. Conectar tu repositorio de GitHub con Vercel
-2. Configurar el directorio de construcción como `frontend`
-3. Establecer el comando de construcción: `npm run build`
-4. Configurar la variable de entorno `REACT_APP_API_URL` con la URL de tu API desplegada
+1. Connect your GitHub repository with Vercel
+2. Set the build directory to `frontend`
+3. Set the build command: `npm run build`
+4. Configure the `REACT_APP_API_URL` environment variable with your deployed API URL
 
-## Estructura del proyecto
+## Project Structure
 
 ```
 .
-├── backend/               # Código del servidor FastAPI
-│   ├── main.py            # Punto de entrada de la aplicación
-│   └── requirements.txt   # Dependencias de Python
-├── frontend/              # Aplicación React
-│   ├── public/            # Archivos estáticos
-│   └── src/               # Código fuente de React
-└── README.md              # Este archivo
+├── backend/               # FastAPI server code
+│   ├── main.py            # Application entry point
+│   └── requirements.txt   # Python dependencies
+├── frontend/              # React application
+│   ├── public/            # Static files
+│   └── src/               # React source code
+└── README.md              # This file
 ```
 
 ## API Endpoints
 
-- `GET /tasks/` - Obtener todas las tareas
-- `POST /tasks/` - Crear una nueva tarea
-- `GET /tasks/{task_id}` - Obtener una tarea específica
-- `PUT /tasks/{task_id}` - Actualizar una tarea
-- `DELETE /tasks/{task_id}` - Eliminar una tarea
+- `GET /tasks/` - Get all tasks
+- `POST /tasks/` - Create a new task
+- `GET /tasks/{task_id}` - Get a specific task
+- `PUT /tasks/{task_id}` - Update a task
+- `DELETE /tasks/{task_id}` - Delete a task
 
-## Licencia
+## License
 
-Este proyecto está bajo la Licencia MIT.
+This project is licensed under the MIT License.

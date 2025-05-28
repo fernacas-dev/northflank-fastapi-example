@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// URL de la API desde las variables de entorno
+// API URL from environment variables
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function App() {
@@ -10,7 +10,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cargar tareas al iniciar
+  // Load tasks on component mount
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -19,7 +19,7 @@ function App() {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/tasks/`);
-      if (!response.ok) throw new Error('Error al cargar las tareas');
+      if (!response.ok) throw new Error('Failed to load tasks');
       const data = await response.json();
       setTasks(Array.isArray(data) ? data : []);
       setError(null);
@@ -47,7 +47,7 @@ function App() {
         }),
       });
 
-      if (!response.ok) throw new Error('Error al agregar la tarea');
+      if (!response.ok) throw new Error('Failed to add task');
       
       setNewTaskTitle('');
       await fetchTasks();
@@ -73,7 +73,7 @@ function App() {
         }),
       });
 
-      if (!response.ok) throw new Error('Error al actualizar la tarea');
+      if (!response.ok) throw new Error('Failed to update task');
       
       await fetchTasks();
     } catch (err) {
@@ -83,7 +83,7 @@ function App() {
   };
 
   const deleteTask = async (taskId) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+    if (!window.confirm('Are you sure you want to delete this task?')) {
       return;
     }
     
@@ -92,7 +92,7 @@ function App() {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Error al eliminar la tarea');
+      if (!response.ok) throw new Error('Failed to delete task');
       
       await fetchTasks();
     } catch (err) {
@@ -104,7 +104,7 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>Lista de Tareas</h1>
+        <h1>Task List</h1>
       </header>
       
       <main>
@@ -113,19 +113,19 @@ function App() {
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="Nueva tarea..."
+            placeholder="New task..."
             className="task-input"
             maxLength={100}
           />
           <button type="submit" className="add-button" disabled={!newTaskTitle.trim()}>
-            Agregar
+            Add Task
           </button>
         </form>
 
         {error && <div className="error">{error}</div>}
 
         {loading ? (
-          <p className="loading">Cargando tareas...</p>
+          <p className="loading">Loading tasks...</p>
         ) : (
           <ul className="task-list">
             {tasks.length > 0 ? (
@@ -136,27 +136,27 @@ function App() {
                     checked={task.completed || false}
                     onChange={() => toggleTask(task.id, task.completed)}
                     className="task-checkbox"
-                    aria-label={task.completed ? 'Marcar como pendiente' : 'Marcar como completada'}
+                    aria-label={task.completed ? 'Mark as pending' : 'Mark as complete'}
                   />
                   <span className="task-title">{task.title}</span>
                   <button
                     onClick={() => deleteTask(task.id)}
                     className="delete-button"
-                    aria-label="Eliminar tarea"
+                    aria-label="Delete task"
                   >
                     🗑️
                   </button>
                 </li>
               ))
             ) : (
-              <li className="no-tasks">No hay tareas. ¡Agrega una nueva tarea!</li>
+              <li className="no-tasks">No tasks yet. Add a new task to get started!</li>
             )}
           </ul>
         )}
       </main>
       
       <footer>
-        <p>Total de tareas: {tasks.length} | Tareas completadas: {tasks.filter(t => t.completed).length}</p>
+        <p>Total tasks: {tasks.length} | Completed: {tasks.filter(t => t.completed).length}</p>
       </footer>
     </div>
   );

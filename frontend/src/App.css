@@ -1,4 +1,4 @@
-/* Estilos generales */
+/* General styles */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -37,7 +37,7 @@ h1 {
   font-size: 2rem;
 }
 
-/* Formulario de tarea */
+/* Task form */
 .task-form {
   display: flex;
   margin-bottom: 2rem;
@@ -80,7 +80,7 @@ h1 {
   opacity: 0.7;
 }
 
-/* Lista de tareas */
+/* Task list */
 .task-list {
   list-style: none;
   margin-bottom: 2rem;
@@ -135,7 +135,7 @@ h1 {
   background-color: rgba(231, 76, 60, 0.1);
 }
 
-/* Mensajes */
+/* Messages */
 .error {
   color: #e74c3c;
   background-color: #fde8e8;

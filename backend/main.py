@@ -8,12 +8,12 @@ import uuid
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
+# Load environment variables
 load_dotenv()
 
 app = FastAPI()
 
-# Configurar CORS desde variables de entorno
+# Configure CORS from environment variables
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:3001')
 allow_origins = cors_origins.split(',') if cors_origins != '*' else ["*"]
 
@@ -25,7 +25,7 @@ app.add_middleware(
     allow_headers=os.getenv('CORS_ALLOW_HEADERS', '*').split(','),
 )
 
-# Configuración de Redis usando variables de entorno
+# Redis configuration using environment variables
 redis_client = redis.Redis(
     host=os.getenv('REDIS_HOST', 'localhost'),
     port=int(os.getenv('REDIS_PORT', 6379)),
@@ -38,7 +38,7 @@ class Task(BaseModel):
     title: str
     completed: bool = False
 
-# Generar ID único
+# Generate unique ID
 def generate_id():
     return str(uuid.uuid4())
 
