@@ -27,28 +27,34 @@ app.add_middleware(
 )
 
 # Redis connection configuration
-redis_config = {
-    'host': os.getenv('REDIS_HOST', 'localhost'),
-    'port': int(os.getenv('REDIS_PORT', 6379)),
-    'db': int(os.getenv('REDIS_DB', 0)),
-    'password': os.getenv('REDIS_PASSWORD'),
-    'decode_responses': True,
-    'socket_timeout': 5,
-    'socket_connect_timeout': 5,
-    'retry_on_timeout': True,
-    'max_connections': 20,
-    'health_check_interval': 30,
-    'ssl': True,  # Enable SSL/TLS
-    'ssl_cert_reqs': None,  # Don't require client certificate
-    'ssl_ca_certs': None,  # Use system's default CA certificates
-}
+def get_redis_url():
+    """Construct Redis URL from environment variables"""
+    ssl_enabled = os.getenv('REDIS_SSL', 'false').lower() == 'true'
+    protocol = 'rediss' if ssl_enabled else 'redis'
+    password = os.getenv('REDIS_PASSWORD')
+    host = os.getenv('REDIS_HOST', 'localhost')
+    port = os.getenv('REDIS_PORT', '6379')
+    db = os.getenv('REDIS_DB', '0')
+    
+    # If host already contains protocol, use it as is
+    if host.startswith(('redis://', 'rediss://')):
+        return f"{host}:{port}/{db}?ssl_cert_reqs=none"
+        
+    if password:
+        return f"{protocol}://:{password}@{host}:{port}/{db}?ssl_cert_reqs=none"
+    return f"{protocol}://{host}:{port}/{db}?ssl_cert_reqs=none"
 
-# Remove None values from config
-redis_config = {k: v for k, v in redis_config.items() if v is not None}
-
-# Create Redis connection pool
-redis_pool = redis.ConnectionPool(**redis_config)
-redis_client = redis.Redis(connection_pool=redis_pool)
+# Create Redis client with connection pool
+redis_url = get_redis_url()
+redis_client = redis.Redis.from_url(
+    redis_url,
+    decode_responses=True,
+    socket_timeout=5,
+    socket_connect_timeout=5,
+    retry_on_timeout=True,
+    max_connections=20,
+    health_check_interval=30
+)
 
 def get_redis_connection():
     """Get a Redis connection from the pool with error handling"""
@@ -130,6 +136,11 @@ async def health_check():
         # Test Redis connection
         redis_conn = get_redis_connection()
         redis_conn.ping()
+        
+        # Parse Redis URL to get host and port
+        from urllib.parse import urlparse
+        parsed_url = urlparse(redis_url)
+        
         return {
             "status": "healthy",
             "api": {
@@ -137,8 +148,9 @@ async def health_check():
             },
             "redis": {
                 "status": "connected",
-                "host": redis_config.get('host'),
-                "port": redis_config.get('port')
+                "host": parsed_url.hostname,
+                "port": parsed_url.port,
+                "ssl": parsed_url.scheme == 'rediss'
             },
             "timestamp": str(datetime.utcnow())
         }
@@ -148,6 +160,7 @@ async def health_check():
             detail={
                 "status": "unhealthy",
                 "error": f"Redis connection failed: {str(e)}",
+                "redis_url": redis_url,  # Include URL for debugging
                 "timestamp": str(datetime.utcnow())
             }
         )
