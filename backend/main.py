@@ -26,11 +26,15 @@ app.add_middleware(
 )
 
 # Redis configuration using environment variables
+redis_password = os.getenv('REDIS_PASSWORD')
 redis_client = redis.Redis(
     host=os.getenv('REDIS_HOST', 'localhost'),
     port=int(os.getenv('REDIS_PORT', 6379)),
     db=int(os.getenv('REDIS_DB', 0)),
-    decode_responses=True
+    password=redis_password if redis_password else None,
+    decode_responses=True,
+    socket_connect_timeout=5,
+    socket_keepalive=True
 )
 
 class Task(BaseModel):
