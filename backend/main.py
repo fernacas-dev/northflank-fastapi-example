@@ -6,6 +6,7 @@ import redis
 import json
 import uuid
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -85,4 +86,36 @@ async def delete_task(task_id: str):
     if not redis_client.exists(f"task:{task_id}"):
         raise HTTPException(status_code=404, detail="Task not found")
     redis_client.delete(f"task:{task_id}")
+    return {"message": "Task deleted successfully"}
+
+@app.get("/health", status_code=200)
+async def health_check():
+    """
+    Health check endpoint that verifies the API and Redis connection status.
+    Returns 200 if both API and Redis are working, 500 otherwise.
+    """
+    try:
+        # Test Redis connection
+        redis_client.ping()
+        return {
+            "status": "healthy",
+            "api": {
+                "status": "up"
+            },
+            "redis": {
+                "status": "connected",
+                "host": os.getenv('REDIS_HOST', 'localhost'),
+                "port": int(os.getenv('REDIS_PORT', 6379))
+            },
+            "timestamp": str(datetime.utcnow())
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": str(datetime.utcnow())
+            }
+        )
     return {"message": "Task deleted successfully"}
